@@ -1,0 +1,15 @@
+{
+  "chatModel": {
+    "model": "MODEL_PLACEHOLDER_M318",
+    "timeToFirstToken": "4.123013666s",
+    "streamingDuration": "2.096164500s",
+    "responseModel": "gemini-3.8-flash-control",
+    "usage": {
+      "inputTokens": "4930",
+      "outputTokens": "1296",
+      "thinkingOutputTokens": "983",
+      "responseOutputTokens": "313",
+      "cacheReadTokens": "77404"
+    }
+  }
+}
