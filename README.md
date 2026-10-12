@@ -10,6 +10,10 @@
 
 > 仅支持 **macOS**。与 Google、Antigravity、Anthropic 官方无关。
 
+[![宣传视频（点击播放）](docs/promo.jpg)](https://cdn.jsdelivr.net/gh/Eugene20071112/antigravity-plugins@media/antigravity-plugins-promo.mp4)
+
+▶ [观看宣传视频（87 秒）](https://cdn.jsdelivr.net/gh/Eugene20071112/antigravity-plugins@media/antigravity-plugins-promo.mp4)
+
 ## 一键安装
 
 打开「终端」，粘贴这一行回车：
@@ -99,5 +103,7 @@ Three plugins for the Google Antigravity desktop app (macOS):
 - **antigravity-zh** — Chinese language pack for the Antigravity UI (on by default; toggle it in the appearance menu or disable the plugin).
 
 Install: `curl -fsSL https://raw.githubusercontent.com/Eugene20071112/antigravity-plugins/main/install.sh | bash`
+
+Promo video (Chinese, 87 s): https://cdn.jsdelivr.net/gh/Eugene20071112/antigravity-plugins@media/antigravity-plugins-promo.mp4
 
 MIT licensed. PDF.js is © Mozilla, Apache-2.0 (see `NOTICE`). Not affiliated with Google, Antigravity or Anthropic.
