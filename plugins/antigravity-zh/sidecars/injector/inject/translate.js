@@ -21,6 +21,8 @@ const SOFT_SKIP = '[data-testid="conversation-row-sidebar"], [data-project-card]
 const ATTRS = ['placeholder', 'title', 'aria-label'];
 
 let enabled = true;
+let disposed = false;
+let frameId = null;
 const textOriginals = new Map(); // Text node -> original English
 const attrOriginals = new Map(); // Element -> { attr: original }
 
@@ -112,8 +114,13 @@ const observer = new MutationObserver((records) => {
   }
   if (!scheduled) {
     scheduled = true;
-    requestAnimationFrame(() => {
+    frameId = requestAnimationFrame(() => {
+      frameId = null;
       scheduled = false;
+      if (!enabled || disposed) { pending.clear(); return; }
+      // Maps must not retain detached conversation trees forever.
+      for (const node of textOriginals.keys()) if (!node.isConnected) textOriginals.delete(node);
+      for (const el of attrOriginals.keys()) if (!el.isConnected) attrOriginals.delete(el);
       const batch = pending;
       pending = new Set();
       observer.disconnect();
@@ -137,6 +144,7 @@ const onFrameLoad = (e) => { if (e.target?.matches?.('iframe[data-testid="sideca
 document.addEventListener('load', onFrameLoad, true);
 
 function setEnabled(next, persist = true) {
+  if (disposed) return;
   enabled = !!next;
   if (enabled) { translateTree(document.body); observe(); } else { observer.disconnect(); restoreAll(); }
   announce();
@@ -149,6 +157,10 @@ window.__agyZh = {
 };
 
 window.__agyZhUnload = () => {
+  disposed = true;
+  enabled = false;
+  if (frameId != null) cancelAnimationFrame(frameId);
+  pending.clear();
   observer.disconnect();
   restoreAll();
   delete document.documentElement.dataset.agyLocale;

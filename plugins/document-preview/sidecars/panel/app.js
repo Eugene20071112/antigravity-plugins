@@ -323,6 +323,7 @@
       const info = await callApi('/api/open', { path: filePath });
       if (token !== openToken) return;
       current = info;
+      window.parent.postMessage({ type: 'agy-preview-file', path: info.path, requestedPath: filePath }, '*');
       const [title, detail] = LOADING_TEXT[info.kind] ?? [L('正在打开…', 'Opening…'), ''];
       showLoading(title, detail);
       const prepared = await callApi('/api/prepare', { id: info.id });
@@ -358,8 +359,14 @@
   }
   const absolute = (path) => new URL(path, location.href).href;
 
+  let pdfjsPending = null;
   async function loadPdfjs() {
     if (pdfjs) return pdfjs;
+    if (!pdfjsPending) pdfjsPending = initializePdfjs().finally(() => { pdfjsPending = null; });
+    return pdfjsPending;
+  }
+
+  async function initializePdfjs() {
     const lib = await import(await blobUrl('/vendor/pdfjs/pdf.min.mjs'));
     globalThis.pdfjsLib = lib;
     const viewerLib = await import(await blobUrl('/vendor/pdfjs/pdf_viewer.mjs'));
@@ -398,8 +405,9 @@
     return pdfjs;
   }
 
-  async function renderPdf(info) {
+  async function renderPdf(info, token) {
     const { lib } = await loadPdfjs();
+    if (token !== openToken) return;
     if (pdfDoc) {
       viewer.setDocument(null);
       pdfjs.linkService.setDocument(null);
@@ -416,12 +424,15 @@
       iccUrl: absolute('/vendor/pdfjs/iccs/'),
     });
     task.onPassword = (update, reason) => {
+      if (token !== openToken) { task.destroy(); return; }
       const password = prompt(reason === lib.PasswordResponses.INCORRECT_PASSWORD ? L('密码不正确，请重试：', 'Wrong password, try again:') : L('这个 PDF 需要密码：', 'This PDF needs a password:'));
       if (password == null) task.destroy();
       else update(password);
     };
     try {
-      pdfDoc = await task.promise;
+      const loaded = await task.promise;
+      if (token !== openToken) { await loaded.destroy(); return; }
+      pdfDoc = loaded;
     } catch (err) {
       throw new Error(err?.name === 'PasswordException' ? L('需要密码才能打开。', 'A password is required.') : L('文件可能已损坏。', 'The file may be damaged.'));
     }
@@ -1153,6 +1164,7 @@
   }
 
   async function showLibrary() {
+    window.parent.postMessage({ type: 'agy-preview-file', path: '', requestedPath: '' }, '*');
     ++openToken;
     resetViews();
     current = null;

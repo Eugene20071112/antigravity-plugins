@@ -424,11 +424,11 @@ async function openInDefaultEditor() {
 }
 
 // ---------------------------------------------------------------------------
-// Usage chip: exact TPS / TTFT / context from the language server, plus a
-// live estimate while a reply is streaming.
+// Usage chip: client-observed reply reception rate and backend metadata.
+// DOM character counts are deliberately not treated as token measurements.
 // ---------------------------------------------------------------------------
 
-let usageState = { id: null, data: null, status: null, steps: null, live: null };
+let usageState = { id: null, data: null, status: null, steps: null, live: null, updated: 0, error: false };
 let chip = null;
 
 function ensureChip() {
@@ -459,17 +459,20 @@ function ring(fraction) {
 function renderChip() {
   if (!chip) return;
   const text = chip.querySelector('.cs-usage-text');
-  const last = usageState.data?.last;
+  const last = usageState.id === cascadeId() ? usageState.data?.last : null;
+  chip.title = L(`用量（${MOD}⌥U）`, `Usage (${MOD}⌥U)`);
   chip.classList.toggle('live', !!usageState.live);
   chip.querySelector('.cs-ring')?.remove();
   if (usageState.live) {
-    text.textContent = usageState.live.tps ? `≈${Math.round(usageState.live.tps)} tok/s` : L('生成中…', 'Generating…');
+    text.textContent = L('生成中…', 'Generating…');
+  } else if (usageState.error) {
+    text.textContent = '—';
   } else if (last?.tps) {
     text.textContent = `${Math.round(last.tps)} tok/s`;
   } else {
     text.textContent = last ? `${fmt(last.output)} tok` : '—';
   }
-  if (last?.contextMax && last?.contextUsed) {
+  if (last?.contextMax && last?.contextUsed != null) {
     // contextMax is read from every generation, so it follows Antigravity's
     // own limit (and any change to it) automatically.
     const f = Math.min(1, last.contextUsed / last.contextMax);
@@ -480,7 +483,7 @@ function renderChip() {
 
 const GROUP_COLORS = ['#d97757', '#6a9bcc', '#bcd1a2', '#c4a7e7', '#e3c07b', '#9ca3af'];
 function usagePopover(anchor) {
-  const data = usageState.data;
+  const data = usageState.id === cascadeId() ? usageState.data : null;
   const last = data?.last;
   if (!last) {
     showPop(anchor, h('div', { class: 'cs-pop-sub', style: 'padding:10px' }, L('这个对话还没有生成记录。', 'No generations in this conversation yet.')), { above: true, align: 'start' });
@@ -489,13 +492,13 @@ function usagePopover(anchor) {
   const stat = (value, label) => h('div', { class: 'cs-stat' }, h('b', {}, value), h('span', {}, label));
   const children = [
     h('h4', {}, L('最近一次生成', 'Last generation')),
-    h('div', { class: 'cs-model' }, last.model || ''),
+    h('div', { class: 'cs-model' }, last.responseModel || ''),
     h('div', { class: 'cs-stats' },
       stat(last.tps ? `${Math.round(last.tps)}` : '—', L('tokens / 秒', 'tokens / sec')),
-      stat(last.ttft ? `${last.ttft.toFixed(1)}s` : '—', L('首字延迟', 'Time to first token')),
+      stat(last.ttft != null ? `${last.ttft.toFixed(1)}s` : '—', L('首字延迟', 'Time to first token')),
       stat(fmt(last.output), L('输出 tokens', 'Output tokens'))),
   ];
-  if (last.contextMax) {
+  if (last.contextMax && last.contextUsed != null) {
     const used = last.contextUsed ?? 0;
     const max = last.contextMax;
     const groups = last.breakdown.length ? last.breakdown : [{ name: L('已用', 'Used'), tokens: used }];
@@ -516,7 +519,7 @@ function usagePopover(anchor) {
   const t = data.totals;
   children.push(h('div', { class: 'cs-kv' },
     h('span', {}, L('本次输入 / 缓存命中', 'Input / cache hit')), h('span', {}, `${fmt(last.input)} / ${fmt(last.cacheRead)}`),
-    h('span', {}, L('本次思考 / 回复', 'Thinking / reply')), h('span', {}, `${fmt(last.thinking)} / ${fmt(last.response)}`),
+    h('span', {}, L('本次思考 / 回复', 'Thinking / reply')), h('span', {}, `${fmt(last.thinking)} / ${(last.response == null ? '—' : fmt(last.response))}`),
     h('span', {}, L('对话累计输出', 'Conversation output')), h('span', {}, L(`${fmt(t.output)} tokens · ${t.generations} 次生成`, `${fmt(t.output)} tokens · ${t.generations} generations`)),
     h('span', {}, L('对话累计输入', 'Conversation input')), h('span', {}, L(`${fmt(t.input)} + 缓存 ${fmt(t.cacheRead)}`, `${fmt(t.input)} + ${fmt(t.cacheRead)} cached`)),
     h('span', {}, L('平均速度', 'Average speed')), h('span', {}, t.streaming ? `${Math.round((t.streamedOutput ?? t.output) / t.streaming)} tok/s` : '—'),
@@ -524,49 +527,40 @@ function usagePopover(anchor) {
   showPop(anchor, children, { cls: 'cs-usage-pop', above: true, align: 'start' });
 }
 
-// Live estimate: watch the latest reply grow. CJK ≈ 1.3 chars/token, other
-// text ≈ 4 chars/token. Replaced by exact numbers once the step finishes.
-let liveSamples = [];
-function liveTick() {
-  const replies = $$('[aria-label="Agent response"]');
-  const text = replies.at(-1)?.innerText ?? '';
-  const cjk = (text.match(/[㐀-鿿豈-﫿぀-ヿ가-힯]/g) ?? []).length;
-  const tokens = cjk / 1.3 + (text.length - cjk) / 4;
-  const now = performance.now();
-  liveSamples.push({ t: now, tokens });
-  liveSamples = liveSamples.filter((s) => now - s.t < 4000);
-  const first = liveSamples[0];
-  const rate = liveSamples.length > 2 && now - first.t > 800 ? ((tokens - first.tokens) / (now - first.t)) * 1000 : 0;
-  usageState.live = { tps: rate > 1 ? rate : usageState.live?.tps ?? 0 };
-}
-
+// Refresh snapshots even when step count is unchanged: usage may arrive late.
 let polling = false;
 let pollCount = 0;
 async function poll() {
-  // Background windows refresh every ~5 s instead of every tick.
   if (polling || (document.hidden && ++pollCount % 4 !== 0 && usageState.id === cascadeId())) return;
   polling = true;
+  const id = cascadeId();
+  const current = () => usageState.id === id && cascadeId() === id;
   try {
-    const id = cascadeId();
     if (id !== usageState.id) {
-      usageState = { id, data: null, status: null, steps: null, live: null };
-      liveSamples = [];
+      if (openPop?.el.classList.contains('cs-usage-pop')) closePop();
+      usageState = { id, data: null, status: null, steps: null, live: null, updated: 0, error: false };
       renderChip();
-      if (id) usageState.data = await call('usage', { cascadeId: id }).catch(() => null);
     }
     if (!id) return;
     const status = await call('status', { cascadeId: id }).catch(() => null);
-    const running = status?.status === 'RUNNING';
-    if (running) liveTick();
-    else { usageState.live = null; liveSamples = []; }
+    if (!current()) return;
     const changed = status && (status.steps !== usageState.steps || status.status !== usageState.status);
+    usageState.live = status?.status === 'RUNNING' ? {} : null;
     usageState.status = status?.status;
     usageState.steps = status?.steps;
-    if (changed && !running) {
-      usageState.data = await call('usage', { cascadeId: id }).catch(() => usageState.data);
-      refreshQuota(true);
+    if (changed || !usageState.updated || Date.now() - usageState.updated >= 5000) {
+      try {
+        const data = await call('usage', { cascadeId: id });
+        if (!current()) return;
+        usageState.data = data;
+        usageState.updated = Date.now();
+        usageState.error = false;
+      } catch {
+        if (!current()) return;
+        usageState.error = true;
+      }
+      if (changed && !usageState.live) refreshQuota(true);
     }
-    else if (changed && running) call('usage', { cascadeId: id }).then((d) => { if (usageState.id === id) usageState.data = d; }).catch(() => {});
     renderChip();
   } finally {
     polling = false;
@@ -1004,6 +998,49 @@ async function artifactPath(link) {
   }
   return null;
 }
+
+// Re-clicking an already open file must reload its bytes, even when React
+// keeps the same sidecar tab and URL. Only target this preview plugin.
+const previewFrames = () => $$('iframe[data-testid="sidecar-iframe"]').filter((f) => /^plugin:\/\/document-preview--/.test(f.src));
+const onPreviewFileMessage = (event) => {
+  if (event.data?.type !== 'agy-preview-file') return;
+  const frame = previewFrames().find((f) => f.contentWindow === event.source);
+  if (!frame) return;
+  frame.csPreviewPath = typeof event.data.path === 'string' ? event.data.path : null;
+  frame.csPreviewRequestedPath = typeof event.data.requestedPath === 'string' ? event.data.requestedPath : null;
+};
+let previewReload = 0;
+function refreshOpenPreview(path) {
+  for (const frame of previewFrames()) {
+    let url;
+    try { url = new URL(frame.src); } catch { continue; }
+    const active = frame.csPreviewPath ?? url.searchParams.get('file');
+    if (path !== active && path !== frame.csPreviewRequestedPath) continue;
+    url.searchParams.set('file', path);
+    url.searchParams.set('_agy_reload', `${Date.now()}-${++previewReload}`);
+    frame.src = url.href;
+  }
+}
+let previewClick = 0;
+const onPreviewLinkClick = async (event) => {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const link = event.target.closest?.('a[href]');
+  if (!link || !previewFrames().length) return;
+  const serial = ++previewClick;
+  const conversation = cascadeId();
+  try {
+    const path = await artifactPath(link);
+    if (serial !== previewClick || conversation !== cascadeId() || !path || !PREVIEWABLE.test(path)) return;
+    refreshOpenPreview(path);
+  } catch { /* the app retains its normal link handling */ }
+};
+window.addEventListener('message', onPreviewFileMessage);
+document.addEventListener('click', onPreviewLinkClick, true);
+onCleanup(() => {
+  ++previewClick;
+  window.removeEventListener('message', onPreviewFileMessage);
+  document.removeEventListener('click', onPreviewLinkClick, true);
+});
 
 function previewBase() {
   const frame = $$('iframe[data-testid="sidecar-iframe"]').find((f) => /^plugin:\/\/document-preview--/.test(f.src));

@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { createGit } from './git.mjs';
+import { createUsageReader } from './usage.mjs';
 
 const run = promisify(execFile);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -73,56 +74,7 @@ function lsCall(method, body) {
   });
 }
 
-const seconds = (d) => (d ? Number(String(d).replace(/s$/, '')) : 0);
-const num = (v) => Number(v) || 0;
-
-// Per-conversation cache of generator metadata so polling stays incremental.
-const usageCache = new Map();
-
-async function usage(cascadeId) {
-  if (!/^[0-9a-f-]{36}$/i.test(String(cascadeId))) return null;
-  let entry = usageCache.get(cascadeId);
-  if (!entry) {
-    entry = { count: 0, totals: { input: 0, output: 0, thinking: 0, cacheRead: 0, generations: 0, streaming: 0 }, last: null };
-    usageCache.set(cascadeId, entry);
-  }
-  const res = await lsCall('GetCascadeTrajectoryGeneratorMetadata', { cascadeId, generatorMetadataOffset: entry.count });
-  const list = res.generatorMetadata ?? [];
-  entry.count += list.length;
-  for (const gm of list) {
-    const chat = gm.chatModel;
-    const u = chat?.usage;
-    if (!u) continue;
-    const t = entry.totals;
-    t.input += num(u.inputTokens);
-    t.output += num(u.outputTokens);
-    t.thinking += num(u.thinkingOutputTokens);
-    t.cacheRead += num(u.cacheReadTokens);
-    t.generations += 1;
-    // Tool-call turns stream almost nothing; keep them out of the average speed.
-    if (seconds(chat.streamingDuration) > 0.5 && num(u.outputTokens) > 50) {
-      t.streaming += seconds(chat.streamingDuration);
-      t.streamedOutput = (t.streamedOutput ?? 0) + num(u.outputTokens);
-    }
-    const ctx = chat.chatStartMetadata?.contextWindowMetadata;
-    const streaming = seconds(chat.streamingDuration);
-    entry.last = {
-      model: chat.responseModel || u.model,
-      input: num(u.inputTokens),
-      output: num(u.outputTokens),
-      thinking: num(u.thinkingOutputTokens),
-      response: num(u.responseOutputTokens),
-      cacheRead: num(u.cacheReadTokens),
-      ttft: seconds(chat.timeToFirstToken),
-      streaming,
-      tps: streaming > 0 ? num(u.outputTokens) / streaming : null,
-      contextUsed: ctx?.estimatedTokensUsed ?? ctx?.tokenBreakdown?.totalTokens ?? null,
-      contextMax: ctx?.maxContextTokens ?? null,
-      breakdown: (ctx?.tokenBreakdown?.groups ?? []).map((g) => ({ name: g.name, tokens: g.numTokens })),
-    };
-  }
-  return { last: entry.last, totals: entry.totals };
-}
+const usage = createUsageReader(lsCall);
 
 async function summaries() {
   const res = await lsCall('GetAllCascadeTrajectories', {});

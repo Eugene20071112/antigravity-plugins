@@ -1,6 +1,6 @@
 # Antigravity 插件合集
 
-给 Google Antigravity 桌面版用的两个插件，装上即用，不改动 Antigravity 本身，随时可以卸载。
+给 Google Antigravity 桌面版用的三个插件，装上即用，不改动 Antigravity 本身，随时可以卸载。
 
 | 插件 | 作用 |
 | --- | --- |
@@ -42,6 +42,7 @@ PDF、CSV、图片、MP3/FLAC 等不需要任何依赖。安装脚本会检查�
 ![文件预览](docs/document-preview.png)
 
 - 在对话或文件树里点开文件，会自动在右侧用插件打开；PNG/JPG/MP4 等 Antigravity 自带能看的格式仍交给官方查看器
+- 再次点击已打开的同一个文件链接会刷新预览，重新读取文件内容。
 - PDF：基于 Mozilla pdf.js，可选中文字、⌘F 查找、触控板双指缩放、页面缩略图、夜间阅读
 - Office / WPS：用 LibreOffice 转成 PDF 后显示（首次几秒，之后有缓存）
 - CSV / TSV：表格视图，表头固定、可筛选，自动识别 GBK 编码的中文表格
@@ -57,7 +58,7 @@ PDF、CSV、图片、MP3/FLAC 等不需要任何依赖。安装脚本会检查�
 - **配色与字体**：暖米白浅色 / 暖炭灰深色，跟随 Antigravity 的深浅主题；全局使用 Claude 风格衬线字体（可改为只有回复用衬线）；强调色（7 种预设或任意自定义颜色）和背景色调（暖灰 / 中性 / 纯黑纯白）都可以自己选；输入框与消息气泡重新设计
 - **用量额度**：侧边栏“设置”旁直接显示 Gemini 和 Claude·GPT 的 5 小时剩余额度（周额度快用完时自动切换），点击查看 5 小时和每周额度及重置时间；可在设置里关闭
 - **界面语言**：跟随系统语言（中文 / 英文）；装了汉化包时显示中文
-- **TPS / 上下文用量**：模型选择器旁显示上一次生成的 tokens/秒和上下文占用圆环，点开（⌘⌥U）查看首字延迟、输出 / 思考 tokens、缓存命中、上下文构成和对话累计。数据来自 Antigravity 记录的真实用量；上下文上限也是从 Antigravity 实时读取，官方调整后会自动跟着变
+- **TPS / 上下文用量**：模型选择器旁显示上一次生成的回复接收速率估算和上下文占用圆环。回复速率使用非思考输出 / 流式接收时长；短于 0.5 秒的流式记录不参与测速，生成中不使用字符数猜测 token。点开（⌘⌥U）可查看延迟、输出与思考用量、上下文和累计统计；模型一栏只使用后端返回标识。后端标识不能验证底层权重或解释 control 等后缀。上下文为最近一次请求开始时的估算，上限从该次生成记录读取。
 - **Git 面板（⌘⇧G）**：按文件暂存 / 取消暂存 / 丢弃、就地看 diff、提交 / 提交并推送、拉取、切换和新建分支、创建 PR（装了 `gh` 时用 `gh pr create --web`，否则打开 GitHub/GitLab 的新建页面）
 - **打开方式（⌘⌥E）**：在 VS Code、Cursor、Zed、Xcode、Finder、终端、iTerm、Warp 等中打开当前工作区（只列出你装了的应用）
 - 顶栏滑杆按钮里可以开关配色、衬线字体、中文宋体、宽版阅读、用量显示，调整回复字号
@@ -91,10 +92,10 @@ curl -fsSL https://raw.githubusercontent.com/Eugene20071112/antigravity-plugins/
 
 ## English
 
-Two plugins for the Google Antigravity desktop app (macOS):
+Three plugins for the Google Antigravity desktop app (macOS):
 
 - **document-preview** — preview PDF, Office/WPS (via LibreOffice), CSV/TSV, RAW/HEIC/PSD images, audio/video (ffmpeg for exotic codecs), fonts and archives inside Antigravity.
-- **claude-style** — Claude-style colors and serif typography (custom accent and background tone), exact tokens/sec and context usage, quota at a glance, a Git panel (stage/pull/branch/PR) and an "Open in…" menu. Follows your system language.
+- **claude-style** — Claude-style colors and serif typography (custom accent and background tone), backend-reported usage, estimated reply reception rate and context usage, quota at a glance, a Git panel (stage/pull/branch/PR) and an "Open in…" menu. Follows your system language.
 - **antigravity-zh** — Chinese language pack for the Antigravity UI (on by default; toggle it in the appearance menu or disable the plugin).
 
 Install: `curl -fsSL https://raw.githubusercontent.com/Eugene20071112/antigravity-plugins/main/install.sh | bash`
