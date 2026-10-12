@@ -948,8 +948,11 @@
 
   async function renderFont(info) {
     const family = `PreviewFont${++fontCounter}`;
-    const face = new FontFace(family, `url("${info.src}")`);
+    // Load the bytes ourselves: FontFace can't fetch from the plugin:// scheme.
+    let face;
     try {
+      const buffer = await (await fetch(info.src)).arrayBuffer();
+      face = new FontFace(family, buffer);
       await face.load();
     } catch {
       throw new Error(L('字体文件无法解析。', 'The font file can\'t be read.'));

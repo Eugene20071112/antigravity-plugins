@@ -246,7 +246,7 @@ export function createFiles(dataDir) {
   async function listArchive(rec) {
     let stdout;
     try {
-      ({ stdout } = await run('/usr/bin/tar', ['-tvf', rec.path], { timeout: 30000, maxBuffer: 64 * MB }));
+      ({ stdout } = await run('/usr/bin/tar', ['-tvf', rec.path], { timeout: 30000, maxBuffer: 64 * MB, env: { ...process.env, LANG: 'en_US.UTF-8', LC_ALL: 'en_US.UTF-8' } }));
     } catch {
       throw new UserError('无法读取这个压缩包（可能已加密或格式不受支持）。');
     }
