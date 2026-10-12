@@ -1,0 +1,7 @@
+{
+  "name": "document-preview-panel",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Side panel that previews documents and media the built-in file viewer cannot open."
+}

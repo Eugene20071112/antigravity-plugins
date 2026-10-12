@@ -1,0 +1,6 @@
+plugins/document-preview/sidecars/panel/vendor/pdfjs contains PDF.js (pdfjs-dist 6.3.289)
+by Mozilla, licensed under the Apache License 2.0 (see vendor/pdfjs/LICENSE).
+Its wasm/ folder includes OpenJPEG, JBIG2 and QCMS builds under their own licenses
+(see vendor/pdfjs/wasm/LICENSE_*).
+
+This project is not affiliated with Google, Antigravity or Anthropic.

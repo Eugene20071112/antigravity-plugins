@@ -1,0 +1,7 @@
+{
+  "name": "antigravity-zh-injector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Translates the Antigravity window into Chinese."
+}

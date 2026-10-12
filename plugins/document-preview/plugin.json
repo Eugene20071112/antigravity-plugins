@@ -1,0 +1,5 @@
+{
+  "name": "document-preview",
+  "description": "在 Antigravity 里直接预览 PDF、Word/PowerPoint/Excel 等 Office 文档，以及内置查看器不支持的图片、视频与音频格式。",
+  "logo": "assets/logo.svg"
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>文件预览</title>
+  <link rel="stylesheet" href="/vendor/pdfjs/pdf_viewer.css">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Bridge to Antigravity: applies the host theme and defines window.sidecar. -->
+  <script src="/preload.js"></script>
+</head>
+<body>
+  <!-- Icon sprite: 24px grid, strokes styled in CSS. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 14.5 6-6 6 6"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.3" class="fill"/><circle cx="12" cy="12" r="1.3" class="fill"/><circle cx="18" cy="12" r="1.3" class="fill"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 7h10M9 12h10M9 17h10"/><circle cx="5" cy="7" r="1" class="fill"/><circle cx="5" cy="12" r="1" class="fill"/><circle cx="5" cy="17" r="1" class="fill"/></symbol>
+      <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h4l2 2h7A1.5 1.5 0 0 1 20 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 5v4h-4"/></symbol>
+      <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M9.5 5v14"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path class="solid" d="M8 5.6v12.8a.7.7 0 0 0 1.05.6l10.1-6.4a.7.7 0 0 0 0-1.2L9.05 5a.7.7 0 0 0-1.05.6z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><rect class="solid" x="6.5" y="5" width="3.8" height="14" rx="1.2"/><rect class="solid" x="13.7" y="5" width="3.8" height="14" rx="1.2"/></symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24"><path class="solid" d="M4 10v4h3.5L12 18V6L7.5 10z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24"><path class="solid" d="M4 10v4h3.5L12 18V6L7.5 10z"/><path d="m16 10 4 4M20 10l-4 4"/></symbol>
+      <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 4.5 19.5 7 17 9.5M19.5 7H8a3.5 3.5 0 0 0-3.5 3.5V11M7 19.5 4.5 17 7 14.5M4.5 17H16a3.5 3.5 0 0 0 3.5-3.5V13"/></symbol>
+      <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><rect class="solid" x="12" y="12" width="6" height="4.5" rx="1"/></symbol>
+      <symbol id="i-back10" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.05-4.95M5 5v4h4"/></symbol>
+      <symbol id="i-fwd10" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 5v4h-4"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h6.5L18 8v11.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/><path d="M13 3.5V8h5"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r=".7" class="fill"/></symbol>
+      <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 17.5V6.5l10-2v11"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16h0a2 2 0 0 1-2-2z"/></symbol>
+    </defs>
+  </svg>
+
+  <main id="stage" class="stage">
+    <!-- PDF and Office files (converted to PDF). pdf.js needs an absolutely positioned container. -->
+    <aside id="thumbs" class="thumbs" hidden></aside>
+    <div id="pdf-container" class="pdf-container view" tabindex="0" hidden><div id="pdf-viewer" class="pdfViewer"></div></div>
+
+    <div id="image-view" class="image-view view" tabindex="0" hidden><img id="image" alt="" draggable="false"></div>
+
+    <div id="video-view" class="video-view view" tabindex="0" hidden>
+      <video id="video" playsinline preload="metadata"></video>
+      <button class="big-play" data-act="toggle" type="button" aria-label="播放"><svg><use href="#i-play"/></svg></button>
+      <div class="video-chrome">
+        <div class="scrub" data-scrub tabindex="0" role="slider" aria-label="播放进度">
+          <div class="scrub-track"><div class="scrub-buffer"></div><div class="scrub-fill"></div></div>
+          <div class="scrub-thumb"></div>
+          <div class="scrub-tip" hidden></div>
+        </div>
+        <div class="video-controls">
+          <button class="ctl" data-act="toggle" type="button" aria-label="播放/暂停"><svg><use href="#i-play"/></svg></button>
+          <div class="volume">
+            <button class="ctl" data-act="mute" type="button" aria-label="静音"><svg><use href="#i-volume"/></svg></button>
+            <input class="volume-range" type="range" min="0" max="1" step="0.01" value="1" aria-label="音量">
+          </div>
+          <span class="time"><span data-time="current">0:00</span> / <span data-time="duration">0:00</span></span>
+          <span class="spacer"></span>
+          <button class="ctl text" data-act="speed" type="button" aria-label="播放速度">1×</button>
+          <button class="ctl" data-act="loop" type="button" aria-label="循环播放" aria-pressed="false"><svg><use href="#i-loop"/></svg></button>
+          <button class="ctl" data-act="pip" type="button" aria-label="画中画"><svg><use href="#i-pip"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="audio-view" class="audio-view view" tabindex="0" hidden>
+      <div class="audio-card">
+        <div class="audio-head">
+          <div class="audio-art"><svg><use href="#i-music"/></svg></div>
+          <div class="audio-titles">
+            <div id="audio-name" class="audio-name"></div>
+            <div id="audio-meta" class="audio-meta"></div>
+          </div>
+        </div>
+        <div class="wave" data-scrub tabindex="0" role="slider" aria-label="播放进度">
+          <canvas id="wave-canvas"></canvas>
+          <div class="scrub-tip" hidden></div>
+        </div>
+        <div class="audio-times"><span data-time="current">0:00</span><span data-time="duration">0:00</span></div>
+        <div class="audio-controls">
+          <button class="ctl text" data-act="speed" type="button" aria-label="播放速度">1×</button>
+          <button class="ctl" data-act="back" type="button" aria-label="后退 10 秒"><svg><use href="#i-back10"/></svg></button>
+          <button class="play-main" data-act="toggle" type="button" aria-label="播放/暂停"><svg><use href="#i-play"/></svg></button>
+          <button class="ctl" data-act="fwd" type="button" aria-label="前进 10 秒"><svg><use href="#i-fwd10"/></svg></button>
+          <button class="ctl" data-act="loop" type="button" aria-label="循环播放" aria-pressed="false"><svg><use href="#i-loop"/></svg></button>
+        </div>
+        <audio id="audio" preload="metadata"></audio>
+      </div>
+    </div>
+
+    <div id="table-view" class="table-view view" tabindex="0" hidden>
+      <table id="table"><thead></thead><tbody></tbody></table>
+      <div id="table-more" class="table-more" hidden><button type="button" class="btn">显示更多行</button></div>
+    </div>
+
+    <div id="font-view" class="font-view view" hidden>
+      <div class="font-hero">Aa 永</div>
+      <input id="font-input" class="font-input" type="text" value="敏捷的棕色狐狸跳过了懒狗 The quick brown fox jumps over the lazy dog" aria-label="预览文字" spellcheck="false">
+      <div id="font-sizes" class="font-sizes"></div>
+      <div class="font-glyphs">
+        <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div>abcdefghijklmnopqrstuvwxyz</div>
+        <div>0123456789 !@#$%&amp;*()[]{};:'",.?/</div>
+        <div>天地玄黄 宇宙洪荒 日月盈昃 辰宿列张</div>
+      </div>
+    </div>
+
+    <div id="archive-view" class="list-view view" hidden>
+      <div id="archive-summary" class="list-summary"></div>
+      <ul id="archive-list" class="rows"></ul>
+    </div>
+
+    <div id="text-view" class="text-view view" hidden><pre id="text"></pre></div>
+
+    <!-- Opened from Overview → Plugins (no file): this conversation's files + workspace files. -->
+    <section id="library" class="library view" hidden>
+      <header class="library-header">
+        <h1>文件预览</h1>
+        <label class="search-field">
+          <svg><use href="#i-search"/></svg>
+          <input id="filter" type="search" placeholder="搜索文件" aria-label="搜索文件" autocomplete="off">
+        </label>
+      </header>
+      <div id="chips" class="chips" role="tablist">
+        <button class="chip" data-group="all" aria-selected="true" type="button">全部</button>
+        <button class="chip" data-group="document" aria-selected="false" type="button">文档</button>
+        <button class="chip" data-group="table" aria-selected="false" type="button">表格</button>
+        <button class="chip" data-group="image" aria-selected="false" type="button">图片</button>
+        <button class="chip" data-group="media" aria-selected="false" type="button">音视频</button>
+        <button class="chip" data-group="other" aria-selected="false" type="button">其他</button>
+      </div>
+      <div id="lib-sections"></div>
+      <div id="library-empty" class="empty" hidden></div>
+    </section>
+
+    <div id="status" class="status" role="status" hidden>
+      <div id="status-loading" class="loader"><span class="ring"></span></div>
+      <div id="status-error" class="status-icon" hidden><svg><use href="#i-alert"/></svg></div>
+      <p id="status-title" class="status-title"></p>
+      <p id="status-detail" class="status-detail"></p>
+      <div id="status-actions" class="status-actions" hidden>
+        <button id="status-open" class="btn primary" type="button">用默认应用打开</button>
+        <button id="status-reveal" class="btn" type="button">在 Finder 中显示</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating dock: groups show per view via data-for. -->
+  <nav id="dock" class="dock glass" hidden>
+    <button id="back" class="ctl" type="button" title="返回文件列表" hidden><svg><use href="#i-left"/></svg></button>
+    <button id="switcher" class="ctl" type="button" title="切换文件" aria-haspopup="dialog"><svg><use href="#i-list"/></svg></button>
+    <span class="divider"></span>
+    <div class="dock-group" data-for="pdf">
+      <button id="thumbs-toggle" class="ctl" type="button" title="页面缩略图" aria-pressed="false"><svg><use href="#i-sidebar"/></svg></button>
+      <span class="pager"><input id="page" type="text" inputmode="numeric" aria-label="页码" value="1"><span id="pages">/ 1</span></span>
+      <span class="divider"></span>
+    </div>
+    <div class="dock-group" data-for="pdf image font">
+      <button id="zoom-out" class="ctl" type="button" title="缩小 (⌘−)"><svg><use href="#i-minus"/></svg></button>
+      <button id="zoom-label" class="zoom-label" type="button" title="点击切换：适合宽度 / 适合页面">100%</button>
+      <button id="zoom-in" class="ctl" type="button" title="放大 (⌘+)"><svg><use href="#i-plus"/></svg></button>
+      <span class="divider"></span>
+    </div>
+    <div class="dock-group" data-for="image">
+      <button id="rotate" class="ctl" type="button" title="旋转 (R)"><svg><use href="#i-rotate"/></svg></button>
+      <span class="divider"></span>
+    </div>
+    <div class="dock-group" data-for="pdf table text archive">
+      <button id="find-toggle" class="ctl" type="button" title="查找 (⌘F)"><svg><use href="#i-search"/></svg></button>
+    </div>
+    <button id="more" class="ctl" type="button" title="更多" aria-haspopup="menu" aria-expanded="false"><svg><use href="#i-more"/></svg></button>
+  </nav>
+
+  <div id="menu" class="popover glass" role="menu" hidden>
+    <div id="menu-info" class="menu-info"></div>
+    <button class="menu-item" data-menu="night" role="menuitemcheckbox" aria-checked="false" hidden><svg><use href="#i-moon"/></svg><span>夜间阅读</span></button>
+    <button class="menu-item" data-menu="open" role="menuitem"><svg><use href="#i-external"/></svg><span>用默认应用打开</span></button>
+    <button class="menu-item" data-menu="reveal" role="menuitem"><svg><use href="#i-folder"/></svg><span>在 Finder 中显示</span></button>
+    <button class="menu-item" data-menu="copy" role="menuitem"><svg><use href="#i-copy"/></svg><span>复制文件路径</span></button>
+    <button class="menu-item" data-menu="ask" role="menuitem" hidden><svg><use href="#i-chat"/></svg><span>在对话中提及此文件</span></button>
+  </div>
+
+  <div id="switch-pop" class="popover glass switch-pop" role="dialog" aria-label="切换文件" hidden>
+    <label class="search-field small">
+      <svg><use href="#i-search"/></svg>
+      <input id="switch-filter" type="search" placeholder="本对话的文件" autocomplete="off">
+    </label>
+    <ul id="switch-list" class="rows compact"></ul>
+  </div>
+
+  <div id="speed-menu" class="popover glass speed-menu" role="menu" hidden></div>
+
+  <form id="find-bar" class="find-bar glass" role="search" hidden>
+    <svg class="find-icon"><use href="#i-search"/></svg>
+    <input id="find-input" type="search" placeholder="查找" aria-label="查找" autocomplete="off" spellcheck="false">
+    <span id="find-count" class="find-count"></span>
+    <button id="find-prev" class="ctl" type="button" title="上一个 (⇧↩)"><svg><use href="#i-up"/></svg></button>
+    <button id="find-next" class="ctl" type="submit" title="下一个 (↩)"><svg><use href="#i-down"/></svg></button>
+    <button id="find-close" class="ctl" type="button" title="关闭 (Esc)"><svg><use href="#i-close"/></svg></button>
+  </form>
+
+  <div id="toast" class="toast glass" role="status" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

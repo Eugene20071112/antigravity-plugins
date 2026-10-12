@@ -1,0 +1,5 @@
+{
+  "name": "claude-style",
+  "description": "Antigravity 外观增强：暖色配色与阅读排版，TPS/上下文用量、Git 面板（暂存/拉取/分支/PR）、在外部应用中打开。",
+  "logo": "assets/logo.svg"
+}

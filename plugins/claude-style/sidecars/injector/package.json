@@ -1,0 +1,7 @@
+{
+  "name": "claude-style-injector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Applies the Claude-style theme and extra features to the Antigravity window."
+}

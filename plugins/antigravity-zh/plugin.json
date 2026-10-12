@@ -1,0 +1,5 @@
+{
+  "name": "antigravity-zh",
+  "description": "Antigravity 中文汉化包：把界面（侧边栏、设置、菜单、命令等）翻译成中文。不改动对话内容和代码，关闭即恢复英文。",
+  "logo": "assets/logo.svg"
+}
