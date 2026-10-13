@@ -408,6 +408,7 @@ div:has(> [data-testid="model-selector-trigger"] + .cs-usage) { display: flex !i
 }
 .cs-greeting .cs-logo { display: inline-flex; width: 0.9em; height: 0.9em; }
 .cs-greeting .cs-logo svg { width: 100%; height: 100%; stroke: none; stroke-width: 0; fill: initial; }
+.cs-greeting .cs-logo img { width: 100%; height: 100%; object-fit: contain; }
 @keyframes cs-greet { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* Artifact PDF/Office fallback handled by the preview plugin. */

@@ -6,7 +6,7 @@
 // injected UI through a private Runtime binding — no network port is opened.
 // Stopping the sidecar (disabling the plugin) removes everything again.
 
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs';
 import https from 'node:https';
 import os from 'node:os';
@@ -207,6 +207,28 @@ const localize = (msg, lang) => (lang === 'en' && EN[msg]) || msg;
 
 const sessions = new Map(); // targetId → session
 
+// Antigravity's logo for the greeting. 2.23 dropped it from the "Open IDE"
+// button we used to borrow it from, so read the app's own icon instead.
+let logoCache;
+function appLogo() {
+  if (logoCache !== undefined) return logoCache;
+  logoCache = null;
+  const exe = process.env.ANTIGRAVITY_EXECUTABLE || process.execPath;
+  const app = /^(.*?\.app)\//.exec(exe)?.[1];
+  const icons = [app && join(app, 'Contents', 'Resources', 'icon.icns'), '/Applications/Antigravity.app/Contents/Resources/icon.icns'];
+  for (const icon of icons) {
+    if (!icon || !existsSync(icon)) continue;
+    try {
+      mkdirSync(DATA_DIR, { recursive: true });
+      const out = join(DATA_DIR, 'antigravity-logo.png');
+      execFileSync('/usr/bin/sips', ['-s', 'format', 'png', '-Z', '128', icon, '--out', out], { stdio: 'ignore', timeout: 10000 });
+      logoCache = `data:image/png;base64,${readFileSync(out).toString('base64')}`;
+      break;
+    } catch { /* try the next location */ }
+  }
+  return logoCache;
+}
+
 function bootSource() {
   const css = readFileSync(join(HERE, 'inject', 'skin.css'), 'utf8');
   const js = readFileSync(join(HERE, 'inject', 'app.js'), 'utf8');
@@ -216,6 +238,7 @@ function bootSource() {
     window.__claudeStyleUnload?.();
     window.__CLAUDE_STYLE_CSS__ = ${JSON.stringify(css)};
     window.__CLAUDE_STYLE_BINDING__ = ${JSON.stringify(BINDING)};
+    window.__CLAUDE_STYLE_LOGO__ = ${JSON.stringify(appLogo())};
     ${js}
   };
   // On a fresh load this runs before <head>/<body> exist.

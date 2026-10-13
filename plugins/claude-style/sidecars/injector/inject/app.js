@@ -958,6 +958,50 @@ function greetingText() {
   const hr = new Date().getHours();
   return hr < 5 ? L('夜深了', 'Good night') : hr < 11 ? L('早上好', 'Good morning') : hr < 13 ? L('中午好', 'Good afternoon') : hr < 18 ? L('下午好', 'Good afternoon') : L('晚上好', 'Good evening');
 }
+// The app icon is a white macOS tile with the mark on it: drop the tile so only
+// the mark shows, like the SVG the "Open IDE" button used to carry.
+let iconLogoUrl = null;
+function iconLogo() {
+  const src = window.__CLAUDE_STYLE_LOGO__;
+  if (!src) return null;
+  const img = h('img', { alt: '', draggable: 'false' });
+  if (iconLogoUrl) { img.src = iconLogoUrl; return img; }
+  img.style.visibility = 'hidden';
+  const raw = new Image();
+  raw.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = raw.naturalWidth; c.height = raw.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(raw, 0, 0);
+    const data = ctx.getImageData(0, 0, c.width, c.height);
+    const px = data.data;
+    let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      // The white tile becomes transparent; the mark (never close to white) stays.
+      // Edge pixels are un-blended from white so they don't leave a light halo.
+      const min = Math.min(px[i], px[i + 1], px[i + 2]);
+      const a = Math.min(1, Math.max(0, (248 - min) / 70));
+      if (a > 0 && a < 1) for (let k = 0; k < 3; k++) px[i + k] = Math.max(0, Math.min(255, (px[i + k] - 255 * (1 - a)) / a));
+      px[i + 3] = Math.round(px[i + 3] * a);
+      if (px[i + 3] > 24) {
+        const x = (i / 4) % c.width, y = Math.floor(i / 4 / c.width);
+        x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+    if (x1 <= x0) { img.remove(); return; }
+    const side = Math.max(x1 - x0, y1 - y0) + 2;
+    const out = document.createElement('canvas');
+    out.width = out.height = side;
+    out.getContext('2d').drawImage(c, x0 - (side - (x1 - x0)) / 2, y0 - (side - (y1 - y0)) / 2, side, side, 0, 0, side, side);
+    iconLogoUrl = out.toDataURL('image/png');
+    img.src = iconLogoUrl;
+    img.style.visibility = '';
+  };
+  raw.src = src;
+  return img;
+}
+
 function ensureGreeting() {
   const box = document.getElementById('antigravity.agentSidePanelInputBox');
   const page = !cascadeId() && settings.theme ? box?.closest('.animate-fade-in.items-center') : null;
@@ -969,8 +1013,9 @@ function ensureGreeting() {
   while (block.parentElement && block.parentElement !== page) block = block.parentElement;
   const prev = block.previousElementSibling;
   if (prev && /Project|Workspace|项目|工作区/.test(prev.textContent || '')) block = prev;
-  // Antigravity's own logo, borrowed from the "Open IDE" button.
-  const logo = $('[data-testid^="open-editor"] svg')?.cloneNode(true);
+  // Antigravity's own logo: from the "Open IDE" button when it has one (up to
+  // 2.22), otherwise the app icon read by the sidecar.
+  const logo = $('[data-testid^="open-editor"] svg')?.cloneNode(true) ?? iconLogo();
   greeting = h('div', { class: 'cs-ui cs-greeting' }, logo ? h('span', { class: 'cs-logo' }, logo) : null, greetingText());
   page.insertBefore(greeting, block);
 }
